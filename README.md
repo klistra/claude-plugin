@@ -17,7 +17,7 @@ Or set it up by hand, in Claude Code:
 /klistra:login
 ```
 
-`/klistra:login` gives you a link and a code. Open the link, sign in to klistra, check that the page shows the same code, and allow the computer. You do this once for each computer.
+`/klistra:login` gives you a link and a code. Open the link on any device, your phone too, so a computer you work on over SSH needs no browser of its own. Sign in to klistra, check that the page shows the same code, and allow the computer. You do this once for each computer.
 
 ## Use
 
@@ -35,7 +35,11 @@ Ask Claude Code, for example:
 
 Each computer makes its own key and keeps it in `~/.klistra`, where only you can read it. klistra keeps only a fingerprint of it, and the key never appears in your conversations. Files go to and from klistra through links that work for an hour.
 
-Needs `sh` and `curl`, which macOS and Linux have.
+Runs on macOS, Linux and Windows (x64). Sending and saving files uses `curl`, which all three have.
+
+## How it works
+
+The plugin carries a small program, `klistra`, built for each of those systems from the Rust source in [runtime-src](runtime-src). Claude Code starts it as the plugin's MCP server: it passes each call on to klistra over HTTPS with this computer's key, so Claude Code never handles the key itself. `klistra login` connects the computer, and `klistra status` and `klistra logout` do what they say.
 
 [Privacy policy](https://klistra.ai/privacy) · [Terms](https://klistra.ai/terms) · [hello@klistra.ai](mailto:hello@klistra.ai)
 

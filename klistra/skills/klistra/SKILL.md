@@ -7,7 +7,7 @@ klistra makes short videos and pictures from a plan. With the klistra tools you 
 
 - Find the project with `list_projects`, or make one with `create_project`. Then call `get_project` before you edit, and again when the person may have changed something in the studio.
 - Bring in what is on this computer: pictures, footage, logos, screenshots, recordings. `upload_media` gives a shell command that sends the files; run it, then call `finish_uploads`. Look at media with `view_media` before you write about it.
-- Building (`send_to_builder`), making media (`generate_media`) and reading websites cost the team's credits: do them when the person asks, or say first what you are about to do. After a build, `wait_for_build`, check the result with `view_frame`, and say briefly what changed. `download_render` saves a render here.
+- Building (`send_to_builder`), making media (`generate_media`) and reading websites cost the team's credits: do them when the person asks, or say first what you are about to do. After a build, `wait_for_build` (a build often takes 10 to 30 minutes; it waits until the build ends), check the result with `view_frame`, and say briefly what changed. `download_render` saves a render here.
 - The klistra server's instructions say how a good plan is written: follow them.
 
 If a klistra tool says this computer is not connected, use the login skill (/klistra:login).

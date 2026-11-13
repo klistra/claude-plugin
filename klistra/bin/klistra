@@ -1,0 +1,4 @@
+#!/bin/sh
+# klistra's runtime on the PATH of Claude Code's Bash tool: klistra login, klistra status,
+# klistra logout.
+exec "$(dirname "$0")/../runtime/klistra" "$@"
