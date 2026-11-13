@@ -17,6 +17,8 @@ Or set it up by hand, in Claude Code:
 /klistra:login
 ```
 
+Then start a new Claude Code session for klistra's tools, and do the same after updating the plugin: `/reload-plugins` doesn't start them afresh.
+
 `/klistra:login` gives you a link and a code. Open the link on any device, your phone too, so a computer you work on over SSH needs no browser of its own. Sign in to klistra, check that the page shows the same code, and allow the computer. You do this once for each computer.
 
 ## Use
@@ -41,7 +43,7 @@ Runs on macOS, Linux and Windows (x64). Sending and saving files uses `curl`, wh
 
 ## How it works
 
-The plugin carries a small program, `klistra`, built for each of those systems from the Rust source in [runtime-src](runtime-src). Claude Code starts it as the plugin's MCP server: it passes each call on to klistra over HTTPS with this computer's key, so Claude Code never handles the key itself. While Claude Code is connected to a chat, the program waits at klistra for your messages there and puts each into the Claude Code session, which takes it up even when it is idle. `klistra login` connects the computer, and `klistra status` and `klistra logout` do what they say.
+The plugin carries a small program, `klistra`, built for each of those systems from the Rust source in [runtime-src](runtime-src). Claude Code starts it as the plugin's MCP server: it passes each call on to klistra over HTTPS with this computer's key, so Claude Code never handles the key itself. While Claude Code is connected to a chat, the program waits at klistra for your messages there and puts each into the Claude Code session, which takes it up even when it is idle. The Claude desktop app puts a session that has been idle for a couple of minutes to sleep with its tools, so there Claude starts `klistra wait` in the background when it connects to a chat: it keeps the session awake until it leaves its chats (Claude Code asks you first, the first time). To let it sleep anyway, turn off Keep awake for the computer in the studio, under Claude's mark over the chat; your messages then reach it when it next works. `klistra login` connects the computer, and `klistra status` and `klistra logout` do what they say.
 
 [Privacy policy](https://klistra.ai/privacy) · [Terms](https://klistra.ai/terms) · [hello@klistra.ai](mailto:hello@klistra.ai)
 

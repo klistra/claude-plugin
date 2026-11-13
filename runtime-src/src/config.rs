@@ -28,8 +28,20 @@ fn host_of(base: &str) -> String {
     rest.split('/').next().unwrap_or("").chars().map(|c| if c.is_ascii_alphanumeric() || c == '.' || c == '-' { c } else { '_' }).collect()
 }
 
+/// Where klistra keeps what it keeps on this computer: ~/.klistra.
+pub fn dir() -> PathBuf {
+    home().join(".klistra")
+}
+
 pub fn token_file(base: &str) -> PathBuf {
-    home().join(".klistra").join(format!("token-{}", host_of(base)))
+    dir().join(format!("token-{}", host_of(base)))
+}
+
+/// ~/.klistra, made only this person's when it is made.
+pub fn ensure_dir() -> Result<PathBuf, String> {
+    let dir = dir();
+    private_dir(&dir)?;
+    Ok(dir)
 }
 
 /// This computer's token, if it has made one.

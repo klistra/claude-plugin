@@ -1,6 +1,6 @@
 [package]
 name = "klistra-runtime"
-version = "0.3.0"
+version = "0.3.1"
 description = "klistra's runtime for Claude Code: the plugin's MCP server over stdio, which carries this computer's klistra token and brings the person's messages from the studio's chat into the session, and the login that connects the computer"
 edition = "2021"
 license = "MIT"

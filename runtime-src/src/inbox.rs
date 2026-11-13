@@ -107,6 +107,25 @@ pub fn post(inbox: &Inbox, text: &str) -> Result<(), String> {
     }
 }
 
+/// `klistra inbox <text>`: puts a message into the Claude Code session it is run from, as the
+/// person's messages from the studio are put in, to check that this works on this computer.
+pub fn post_here(text: &str) -> i32 {
+    let Some(inbox) = of_session() else {
+        eprintln!("Not run from a Claude Code session that takes messages: there is no CLAUDE_CODE_MESSAGING_SOCKET, or crossSessionInbound turns them away.");
+        return 1;
+    };
+    match post(&inbox, text) {
+        Ok(()) => {
+            println!("Put into this session's inbox.");
+            0
+        }
+        Err(e) => {
+            eprintln!("Could not put it into this session's inbox: {e}");
+            1
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
