@@ -1,0 +1,13 @@
+{
+  "name": "klistra",
+  "owner": { "name": "klistra", "email": "hello@klistra.ai" },
+  "metadata": { "description": "Plan klistra videos and pictures from Claude Code." },
+  "plugins": [
+    {
+      "name": "klistra",
+      "source": "./klistra",
+      "description": "Plan short videos and pictures in your klistra projects from Claude Code: list and make projects, write and edit the plan, add media from this computer, build and save renders.",
+      "category": "productivity"
+    }
+  ]
+}

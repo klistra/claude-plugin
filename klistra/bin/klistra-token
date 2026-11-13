@@ -1,0 +1,25 @@
+#!/bin/sh
+# This computer's klistra token: made the first time it is asked for, kept in ~/.klistra where
+# only this person can read it, and never sent anywhere but klistra. klistra-login has it allowed
+# for an account; until then it reaches nothing. With --header, the header Claude Code sends
+# klistra's MCP server with every call (the plugin's .mcp.json runs it as its headersHelper).
+set -e
+url="${CLAUDE_CODE_MCP_SERVER_URL:-${KLISTRA_URL:-https://app.klistra.ai}}"
+host=$(printf '%s' "$url" | sed -E 's#^[A-Za-z]+://##; s#/.*$##; s#[^A-Za-z0-9.-]#_#g')
+dir="$HOME/.klistra"
+file="$dir/token-$host"
+if [ ! -s "$file" ]; then
+  umask 077
+  mkdir -p "$dir"
+  made="kla_$(head -c 32 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=\n')"
+  printf '%s' "$made" > "$file.$$"
+  # two asking at once keep the one written first
+  mv -n "$file.$$" "$file" 2>/dev/null || true
+  rm -f "$file.$$"
+fi
+token=$(cat "$file")
+if [ "$1" = "--header" ]; then
+  printf '{"Authorization":"Bearer %s"}\n' "$token"
+else
+  printf '%s\n' "$token"
+fi

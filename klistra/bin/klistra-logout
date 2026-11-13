@@ -1,0 +1,12 @@
+#!/bin/sh
+# Disconnects this computer from klistra: its token reaches nothing from then on. klistra-login
+# connects it again, to the same account or another.
+set -e
+base="${KLISTRA_URL:-https://app.klistra.ai}"
+base="${base%/}"
+here=$(cd "$(dirname "$0")" && pwd)
+token=$(KLISTRA_URL="$base" CLAUDE_CODE_MCP_SERVER_URL="$base/api/agent/mcp" sh "$here/klistra-token")
+status=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $token" "$base/api/agent/me") || { echo "Could not reach klistra at $base." >&2; exit 1; }
+if [ "$status" = 200 ]; then echo "Disconnected this computer from klistra."
+else echo "This computer was not connected to klistra."
+fi

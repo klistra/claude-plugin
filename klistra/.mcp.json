@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "klistra": {
+      "type": "http",
+      "url": "${KLISTRA_URL:-https://app.klistra.ai}/api/agent/mcp",
+      "headersHelper": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/klistra-token\" --header",
+      "timeout": 600000
+    }
+  }
+}
