@@ -38,3 +38,5 @@ Each computer makes its own key and keeps it in `~/.klistra`, where only you can
 Needs `sh` and `curl`, which macOS and Linux have.
 
 [Privacy policy](https://klistra.ai/privacy) · [Terms](https://klistra.ai/terms) · [hello@klistra.ai](mailto:hello@klistra.ai)
+
+The plugin is MIT licensed; see [LICENSE](LICENSE). klistra itself is a service, under its [terms](https://klistra.ai/terms).

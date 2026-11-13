@@ -1,12 +1,13 @@
 {
   "name": "klistra",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Plan short videos and pictures in your klistra projects from Claude Code: list and make projects, write and edit the plan, add media from this computer, build and save renders. Part of klistra Pro.",
   "author": {
     "name": "klistra",
     "url": "https://klistra.ai"
   },
   "homepage": "https://klistra.ai/docs",
+  "license": "MIT",
   "keywords": [
     "video",
     "design",
