@@ -2,7 +2,15 @@
 
 use serde_json::Value;
 use std::io::Read;
+use std::sync::OnceLock;
 use std::time::Duration;
+
+/// Headers sent with every request besides the token: the MCP server names its Claude Code session.
+static EXTRA: OnceLock<Vec<(String, String)>> = OnceLock::new();
+
+pub fn send_always(headers: Vec<(String, String)>) {
+    let _ = EXTRA.set(headers);
+}
 
 pub struct Reply {
     pub status: u16,
@@ -30,6 +38,9 @@ pub fn send(method: &str, url: &str, token: Option<&str>, body: Option<&Value>, 
         .set("accept", "application/json, text/event-stream");
     if let Some(token) = token {
         request = request.set("authorization", &format!("Bearer {token}"));
+    }
+    for (name, value) in EXTRA.get().into_iter().flatten() {
+        request = request.set(name, value);
     }
     let response = match body.map_or_else(|| request.clone().call(), |b| request.clone().send_json(b.clone())) {
         Ok(r) => r,

@@ -1,10 +1,12 @@
 //! klistra's runtime for Claude Code. Claude Code starts it as the plugin's MCP server
 //! (`klistra mcp`), which relays each call to klistra with this computer's token, so that Claude
-//! Code itself never handles the token. `klistra login` connects the computer to a klistra
-//! account, once, by a link and a code allowed on any device.
+//! Code itself never handles the token, and puts what the person says to it in the studio's chat
+//! into its session. `klistra login` connects the computer to a klistra account, once, by a link
+//! and a code allowed on any device.
 
 mod config;
 mod http;
+mod inbox;
 mod login;
 mod mcp;
 

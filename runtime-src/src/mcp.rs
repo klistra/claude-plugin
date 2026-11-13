@@ -1,11 +1,13 @@
 //! `klistra mcp`: the plugin's MCP server over stdio. Every request goes on to klistra's own MCP
 //! server, over HTTPS with this computer's token, and its answer comes back as it was: the tools
 //! are all klistra's, so a new one needs nothing new here. The token is read for each call, so a
-//! computer connected while Claude Code runs is used at once.
+//! computer connected while Claude Code runs is used at once. While the session is connected to a
+//! chat in the studio, it waits there for the person's messages and puts each into the session.
 
-use crate::{config, http, log};
+use crate::{config, http, inbox, log};
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -17,6 +19,8 @@ const WAIT_DEFAULT_SECONDS: u64 = 1800;
 const WAIT_MOST_SECONDS: u64 = 3600;
 /// How long answers still on their way are waited for once Claude Code has closed the connection.
 const LAST_ANSWERS: Duration = Duration::from_secs(30);
+/// How long klistra holds one request for the person's messages open, at most.
+const LISTEN_SECONDS: u64 = 25;
 
 #[derive(Clone)]
 struct Output(Arc<Mutex<std::io::Stdout>>);
@@ -87,6 +91,68 @@ fn answer(message: &Value) -> Value {
     forward(message, Duration::from_secs(if method == "tools/call" { 600 } else { 60 }))
 }
 
+/// The name this session goes by at klistra: Claude Code's id for it, or one of its own.
+fn session_name() -> String {
+    std::env::var("CLAUDE_CODE_SESSION_ID")
+        .ok()
+        .filter(|id| !id.is_empty() && id.len() <= 100 && id.chars().all(|c| c.is_ascii_alphanumeric() || "-_.:".contains(c)))
+        .unwrap_or_else(|| config::hash(&format!("{:?}{}", Instant::now(), std::process::id()))[..32].to_string())
+}
+
+/// Whether the person's messages are being waited for at klistra.
+static LISTENING: AtomicBool = AtomicBool::new(false);
+
+/// Waits at klistra for what the person says to this session in the studio's chat, and puts it
+/// into the session: from the first call of a tool (connecting to a chat is one) until the
+/// session is connected to no chat. Started again by the next call when it stopped.
+fn listen(into: inbox::Inbox) {
+    if LISTENING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    std::thread::spawn(move || {
+        let base = config::base();
+        let mut pause = Duration::from_secs(2);
+        loop {
+            let Some(token) = config::token(&base) else { break };
+            let asked = http::send("GET", &format!("{base}/api/agent/inbox?wait={LISTEN_SECONDS}"), Some(&token), None, Duration::from_secs(LISTEN_SECONDS + 20));
+            let reply = match asked {
+                Ok(reply) if reply.status == 200 => reply,
+                // not connected, no longer allowed, or a klistra without chats to wait in: nothing to wait for until a tool is called again
+                Ok(reply) if matches!(reply.status, 401 | 403 | 404) => break,
+                failed => {
+                    if let Err(e) = failed {
+                        log(&e);
+                    }
+                    std::thread::sleep(pause);
+                    pause = (pause * 2).min(Duration::from_secs(60));
+                    continue;
+                }
+            };
+            pause = Duration::from_secs(2);
+            let messages = reply.body["messages"].as_array().cloned().unwrap_or_default();
+            let mut given = Vec::new();
+            for message in &messages {
+                let Some(text) = message["text"].as_str() else { continue };
+                match inbox::post(&into, text) {
+                    Ok(()) => given.push(json!({ "project": message["project"], "chat": message["chat"], "id": message["id"] })),
+                    // left for klistra to give with Claude's next call of a tool
+                    Err(e) => log(&format!("could not put a message from klistra into the session: {e}")),
+                }
+            }
+            if !given.is_empty() {
+                let _ = http::send("POST", &format!("{base}/api/agent/inbox"), Some(&token), Some(&json!({ "delivered": given })), Duration::from_secs(20));
+            }
+            if given.len() < messages.len() {
+                std::thread::sleep(Duration::from_secs(10));
+            }
+            if messages.is_empty() && reply.body["connected"].as_u64() == Some(0) {
+                break;
+            }
+        }
+        LISTENING.store(false, Ordering::SeqCst);
+    });
+}
+
 /// Requests being answered, so that the last answers go out before the server ends.
 #[derive(Clone, Default)]
 struct Underway(Arc<(Mutex<usize>, Condvar)>);
@@ -109,6 +175,14 @@ impl Underway {
 pub fn run() {
     let output = Output(Arc::new(Mutex::new(std::io::stdout())));
     let underway = Underway::default();
+    // klistra knows this session by a name, to give it the messages of the chat it connects to;
+    // it waits a little before giving them with a tool's result when they can come in here
+    let into = inbox::of_session();
+    let mut headers = vec![("x-klistra-session".to_string(), session_name())];
+    if into.is_some() {
+        headers.push(("x-klistra-inbox".to_string(), "1".to_string()));
+    }
+    http::send_always(headers);
     for line in std::io::stdin().lock().lines() {
         let Ok(line) = line else { break };
         // a byte order mark, as some Windows programs write first, is no part of the message
@@ -124,12 +198,16 @@ pub fn run() {
         if message.get("id").is_none() || message.get("method").is_none() {
             continue;
         }
-        let (output, underway) = (output.clone(), underway.clone());
+        let (output, underway, into) = (output.clone(), underway.clone(), into.clone());
         underway.start();
         // each on its own, as Claude Code sends the next while a long one runs
         std::thread::spawn(move || {
+            let called = message["method"] == "tools/call";
             output.send(&answer(&message));
             underway.end();
+            if let (true, Some(into)) = (called, into) {
+                listen(into);
+            }
         });
     }
     log("Claude Code closed the connection");
